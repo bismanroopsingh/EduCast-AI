@@ -1,25 +1,85 @@
-def paragraph_chunk_text(text, min_length=50):
+import re
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+
+def semantic_chunk_text(
+    text,
+    similarity_threshold=0.45,
+    min_chunk_size=5,
+    max_chunk_size=12
+):
     """
-    Split text into paragraph-based chunks.
+    Semantic Chunking V2
 
     Parameters:
-        text (str): Extracted PDF text
-        min_length (int): Minimum characters required for a chunk
+        text (str)
+        similarity_threshold (float)
+        min_chunk_size (int)
+        max_chunk_size (int)
 
     Returns:
-        list: List of paragraph chunks
+        list of semantic chunks
     """
 
-    # Split using blank lines
-    paragraphs = text.split("\n\n")
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    if len(sentences) <= min_chunk_size:
+        return [" ".join(sentences)]
+    embeddings = model.encode(sentences)
 
     chunks = []
 
-    for para in paragraphs:
-        para = para.strip()
+    current_chunk = [sentences[0]]
+    current_embeddings = [embeddings[0]]
 
-        # Ignore very short paragraphs
-        if len(para) >= min_length:
-            chunks.append(para)
+    for i in range(1, len(sentences)):
+
+        sentence_embedding = embeddings[i]
+
+     
+        chunk_centroid = np.mean(
+            current_embeddings,
+            axis=0
+        ).reshape(1, -1)
+
+        similarity = cosine_similarity(
+            chunk_centroid,
+            sentence_embedding.reshape(1, -1)
+        )[0][0]
+
+
+        should_split = (
+            similarity < similarity_threshold
+            and len(current_chunk) >= min_chunk_size
+        )
+
+        force_split = (
+            len(current_chunk) >= max_chunk_size
+        )
+
+        if should_split or force_split:
+
+            chunks.append(
+                " ".join(current_chunk)
+            )
+
+            current_chunk = [sentences[i]]
+            current_embeddings = [sentence_embedding]
+
+        else:
+
+            current_chunk.append(sentences[i])
+            current_embeddings.append(sentence_embedding)
+
+
+    if current_chunk:
+        chunks.append(
+            " ".join(current_chunk)
+        )
 
     return chunks
