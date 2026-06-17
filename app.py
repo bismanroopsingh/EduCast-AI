@@ -1,7 +1,10 @@
 import streamlit as st
 from pdf_processing import extract_text_from_pdf
 from chunking import semantic_chunk_text
-
+from embeddings import generate_embeddings
+from vector_store import create_faiss_index
+from embeddings import model
+from vector_store import retrieve_chunks
 st.set_page_config(page_title="EduCast AI")
 
 st.title("EduCast AI")
@@ -18,9 +21,36 @@ if uploaded_file is not None:
 
     text = extract_text_from_pdf(uploaded_file)
 
-    chunks =semantic_chunk_text(text)
+    chunks = semantic_chunk_text(text)
+
+    chunk_embeddings = generate_embeddings(chunks)
+
+    index = create_faiss_index(chunk_embeddings)
+
+    question = st.text_input(
+        "Ask a question about the PDF"
+    )
+
+    if question:
+
+        st.subheader("Retrieved Context")
+
+        results = retrieve_chunks(
+            question,
+            chunks,
+            model,
+            index,
+            k=3
+        )
+
+        for i, result in enumerate(results):
+            st.write(f"### Result {i+1}")
+            st.write(result)
+
     st.success(f"Created {len(chunks)} chunks")
+
     st.subheader("Extracted Text")
+
     for i, chunk in enumerate(chunks):
         with st.expander(f"Chunk {i+1}"):
             st.write(chunk)
