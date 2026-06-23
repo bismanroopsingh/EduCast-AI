@@ -9,9 +9,9 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def semantic_chunk_text(
     text,
-    similarity_threshold=0.45,
-    min_chunk_size=5,
-    max_chunk_size=12
+    similarity_threshold=0.25,
+    min_chunk_size=8,
+    max_chunk_size=20
 ):
     """
     Semantic Chunking V2
