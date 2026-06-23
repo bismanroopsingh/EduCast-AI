@@ -5,6 +5,9 @@ from embeddings import generate_embeddings
 from vector_store import create_faiss_index
 from embeddings import model
 from vector_store import retrieve_chunks
+from llm import generate_answer
+from tts import text_to_audio
+
 st.set_page_config(page_title="EduCast AI")
 
 st.title("EduCast AI")
@@ -18,7 +21,7 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
 
     st.success("PDF uploaded successfully!")
-
+    
     text = extract_text_from_pdf(uploaded_file)
 
     chunks = semantic_chunk_text(text)
@@ -26,7 +29,6 @@ if uploaded_file is not None:
     chunk_embeddings = generate_embeddings(chunks)
 
     index = create_faiss_index(chunk_embeddings)
-
     question = st.text_input(
         "Ask a question about the PDF"
     )
@@ -42,7 +44,19 @@ if uploaded_file is not None:
             index,
             k=3
         )
-
+        context = "\n\n".join(results)
+        answer = generate_answer(
+        context,
+        question
+    )
+        st.subheader("AI Answer")
+        st.write(answer)
+        # Optional: Show retrieved chunks
+        st.subheader("Retrieved Context")
+        audio_file = text_to_audio(answer)
+        st.subheader("Audio Lesson")
+        st.audio(audio_file, format="audio/mp3")
+        
         for i, result in enumerate(results):
             st.write(f"### Result {i+1}")
             st.write(result)
