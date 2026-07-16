@@ -337,3 +337,227 @@ def get_documents(user_id):
     close_db(connection, cursor)
 
     return documents
+
+def get_document_count(user_id):
+
+    connection, cursor = connect_db()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total
+        FROM documents
+        WHERE user_id=%s
+    """,(user_id,))
+
+    result = cursor.fetchone()
+
+    close_db(connection,cursor)
+
+    return result["total"]
+
+def get_lesson_count(user_id):
+
+    connection,cursor = connect_db()
+
+    cursor.execute("""
+
+        SELECT COUNT(*) AS total
+
+        FROM lessons l
+
+        JOIN documents d
+
+        ON l.document_id=d.document_id
+
+        WHERE d.user_id=%s
+
+    """,(user_id,))
+
+    result=cursor.fetchone()
+
+    close_db(connection,cursor)
+
+    return result["total"]
+def get_quiz_count(user_id):
+
+    connection,cursor=connect_db()
+
+    cursor.execute("""
+
+        SELECT COUNT(*) AS total
+
+        FROM quiz_attempts
+
+        WHERE user_id=%s
+
+    """,(user_id,))
+
+    result=cursor.fetchone()
+
+    close_db(connection,cursor)
+
+    return result["total"]
+def get_average_score(user_id):
+
+    connection,cursor=connect_db()
+
+    cursor.execute("""
+
+        SELECT AVG(percentage) AS avg_score
+
+        FROM quiz_attempts
+
+        WHERE user_id=%s
+
+    """,(user_id,))
+
+    result=cursor.fetchone()
+
+    close_db(connection,cursor)
+
+    return round(result["avg_score"] or 0,2)
+
+def get_weak_topic_count(user_id):
+
+    connection,cursor=connect_db()
+
+    cursor.execute("""
+
+        SELECT COUNT(*) AS total
+
+        FROM weak_topics
+
+        WHERE user_id=%s
+
+    """,(user_id,))
+
+    result=cursor.fetchone()
+
+    close_db(connection,cursor)
+
+    return result["total"]
+def get_all_lessons(user_id):
+
+    connection, cursor = connect_db()
+
+    cursor.execute(
+        """
+        SELECT
+            lessons.topic
+        FROM lessons
+
+        JOIN documents
+        ON lessons.document_id = documents.document_id
+
+        WHERE documents.user_id=%s
+        """,
+        (user_id,)
+    )
+
+    lessons = cursor.fetchall()
+
+    close_db(connection, cursor)
+
+    return lessons
+# ==========================================
+# Dashboard Statistics
+# ==========================================
+
+def get_dashboard_stats(user_id):
+
+    return {
+        "documents": get_document_count(user_id),
+        "lessons": get_lesson_count(user_id),
+        "quizzes": get_quiz_count(user_id),
+        "average_score": get_average_score(user_id),
+        "weak_topics": get_weak_topic_count(user_id)
+    }
+# ==========================================
+# Quiz Score History
+# ==========================================
+
+def get_quiz_scores(user_id):
+
+    connection, cursor = connect_db()
+
+    cursor.execute("""
+        SELECT
+            attempt_date,
+            percentage
+        FROM quiz_attempts
+        WHERE user_id=%s
+        ORDER BY attempt_date
+    """,(user_id,))
+
+    results = cursor.fetchall()
+
+    close_db(connection,cursor)
+
+    return results
+# ==========================================
+# Top Weak Topics
+# ==========================================
+
+def get_top_weak_topics(user_id):
+
+    connection, cursor = connect_db()
+
+    cursor.execute("""
+        SELECT
+            topic,
+            COUNT(*) AS frequency
+        FROM weak_topics
+        WHERE user_id=%s
+        GROUP BY topic
+        ORDER BY frequency DESC
+        LIMIT 10
+    """,(user_id,))
+
+    results = cursor.fetchall()
+
+    close_db(connection,cursor)
+
+    return results
+# ==========================================
+# Recent Documents
+# ==========================================
+
+def get_recent_documents(user_id):
+
+    connection, cursor = connect_db()
+
+    cursor.execute("""
+        SELECT
+            file_name,
+            upload_date
+        FROM documents
+        WHERE user_id=%s
+        ORDER BY upload_date DESC
+        LIMIT 5
+    """,(user_id,))
+
+    results = cursor.fetchall()
+
+    close_db(connection,cursor)
+
+    return results
+# ==========================================
+# Study Recommendations
+# ==========================================
+
+def get_recommended_topics(user_id):
+
+    connection, cursor = connect_db()
+
+    cursor.execute("""
+        SELECT DISTINCT topic
+        FROM weak_topics
+        WHERE user_id=%s
+        ORDER BY weakness_score DESC
+        LIMIT 5
+    """,(user_id,))
+
+    results = cursor.fetchall()
+
+    close_db(connection,cursor)
+
+    return results
