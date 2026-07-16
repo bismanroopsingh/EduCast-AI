@@ -1,3 +1,5 @@
+from multiprocessing import context
+
 from groq import Groq
 from dotenv import load_dotenv
 import os
@@ -8,7 +10,7 @@ client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
 
-def generate_answer(context, question):
+def generate_answer(context, question,history):
 
     prompt = f"""
 You are EduCast AI, an expert educational tutor.
@@ -21,18 +23,18 @@ IMPORTANT RULES:
 
 Provide your answer in exactly this format:
 
-Simple Explanation
+📘 Simple Explanation
 (Explain the concept clearly)
 
-Real-World Example
+🌍 Real-World Example
 (Give a practical example)
 
-Key Takeaways
+🔑 Key Takeaways
 - Point 1
 - Point 2
 - Point 3
 
-Quick Quiz
+📝 Quick Quiz
 1. Question
 2. Question
 
@@ -88,34 +90,52 @@ Document:
     )
 
     return response.choices[0].message.content
-def generate_lesson(topic, context):
+def generate_lesson(topic, context,history,weak_topics):
 
     prompt = f"""
-You are EduCast AI.
+    You are EduCast AI, an intelligent personal tutor.
 
-Create a complete educational lesson on:
+    The student has previously struggled with these topics:
 
-{topic}
+    {weak_topics}
 
-Using ONLY the provided context.
+    Conversation history:
 
-Format:
+    {history}
 
-Lesson Explanation
-Real-World Example
+    Today's lesson:
 
-Key Takeaways
-- Point 1
-- Point 2
-- Point 3
+    {topic}
 
-Mini Quiz
-1. Question
-2. Question
+    Use ONLY the provided context.
 
-Context:
-{context}
-"""
+    Instructions:
+
+    - If today's topic relates to previous weak topics, briefly revise them first.
+    - Explain concepts in simple student-friendly language.
+    - Connect today's lesson to previous lessons whenever possible.
+    - Give practical examples.
+    - End with a quick recap.
+
+    Return the lesson in this format:
+
+    📘 Lesson Explanation
+
+    🌍 Real-World Example
+
+    🔑 Key Takeaways
+    - Point 1
+    - Point 2
+    - Point 3
+
+    📝 Mini Quiz
+    1. Question
+    2. Question
+
+    Context:
+
+    {context}
+    """
 
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
