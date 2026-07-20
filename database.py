@@ -528,10 +528,10 @@ def get_recent_documents(user_id):
     cursor.execute("""
         SELECT
             file_name,
-            upload_date
+            uploaded_at
         FROM documents
         WHERE user_id=%s
-        ORDER BY upload_date DESC
+        ORDER BY uploaded_at DESC
         LIMIT 5
     """,(user_id,))
 
@@ -549,15 +549,18 @@ def get_recommended_topics(user_id):
     connection, cursor = connect_db()
 
     cursor.execute("""
-        SELECT DISTINCT topic
+        SELECT
+            topic,
+            MAX(weakness_score) AS weakness_score
         FROM weak_topics
         WHERE user_id=%s
+        GROUP BY topic
         ORDER BY weakness_score DESC
         LIMIT 5
-    """,(user_id,))
+    """, (user_id,))
 
     results = cursor.fetchall()
 
-    close_db(connection,cursor)
+    close_db(connection, cursor)
 
     return results
